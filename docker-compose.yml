@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: peep
+      POSTGRES_PASSWORD: peep_password
+      POSTGRES_DB: peep_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - peep_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=postgresql://peep:peep_password@postgres:5432/peep_db
+      - JWT_SECRET=${JWT_SECRET:-supersecretjwtkey}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      - postgres
+    networks:
+      - peep_network
+    command: sh -c "npx prisma db push && npx ts-node prisma/seed.ts && npm start"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - peep_network
+
+volumes:
+  pgdata:
+
+networks:
+  peep_network:
+    driver: bridge

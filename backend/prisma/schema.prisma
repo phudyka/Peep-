@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  COMMERCIAL
+}
+
+enum ProductCategory {
+  PUMP
+  FILTER
+  SKIMMER
+  VALVE
+  PIPE
+  NOZZLE
+  SAND
+  OTHER
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(COMMERCIAL)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  quotes       Quote[]
+  calcSettings CalcSettings[]
+}
+
+model Product {
+  id             String          @id @default(uuid())
+  sageRef        String          @unique
+  name           String
+  brand          String
+  category       ProductCategory
+  technicalSpecs Json?
+  purchasePrice  Float
+  sellPrice      Float
+  unit           String          @default("unit")
+  stock          Int             @default(0)
+  photoUrl       String?
+  active         Boolean         @default(true)
+  updatedAt      DateTime        @updatedAt
+
+  quoteLines     QuoteLine[]
+}
+
+model Quote {
+  id                String      @id @default(uuid())
+  reference         String      @unique
+  status            QuoteStatus @default(DRAFT)
+  poolData          Json        // raw user input
+  calcParams        Json        // calculation parameters
+  calculationResult Json        // computed output
+  internalNotes     String?
+  clientName        String
+  clientEmail       String?
+  
+  createdById       String
+  createdBy         User        @relation(fields: [createdById], references: [id])
+  
+  lines             QuoteLine[]
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+model QuoteLine {
+  id               String   @id @default(uuid())
+  quoteId          String
+  quote            Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product  @relation(fields: [productId], references: [id])
+  quantity         Float
+  unitPrice        Float
+  discount         Float    @default(0)
+  visible          Boolean  @default(true)
+  isManuallyAdded  Boolean  @default(false)
+  isManuallyEdited Boolean  @default(false)
+  notes            String?
+}
+
+model CalcSettings {
+  id                        String   @id @default(uuid())
+  residentialFilteringTime  Float    @default(6)
+  publicFilteringTime       Float    @default(4)
+  residentialHMT            Float    @default(8)
+  publicHMT                 Float    @default(12)
+  pumpEfficiency            Float    @default(0.6)
+  m3PerSkimmer              Float    @default(25)
+  filteringSpeed            Float    @default(30)
+  sandPerM2                 Float    @default(300)
+  overflowFlowMultiplier    Float    @default(1.3)
+  spaFlowAddition           Float    @default(4)
+  counterCurrentAddition    Float    @default(3)
+
+  updatedAt                 DateTime @updatedAt
+  updatedById               String
+  updatedBy                 User     @relation(fields: [updatedById], references: [id])
+}

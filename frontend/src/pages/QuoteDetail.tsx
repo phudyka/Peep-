@@ -1,0 +1,143 @@
+
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuote } from '../hooks/useQuote';
+import { useCalculate } from '../hooks/useCalculate';
+import { Step1_PoolDimensions } from '../components/wizard/Step1_PoolDimensions';
+import { Step2_PoolOptions } from '../components/wizard/Step2_PoolOptions';
+import { Step3_Results } from '../components/wizard/Step3_Results';
+import { QuoteTable } from '../components/quote/QuoteTable';
+import { QuoteActions } from '../components/quote/QuoteActions';
+import { PoolVisual } from '../components/quote/PoolVisual';
+import { Input } from '../components/ui/Input';
+import { Button } from '../components/ui/Button';
+import { ChevronLeft } from 'lucide-react';
+import { QuoteLine } from '../types';
+
+const QuoteDetail = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { quote, updateQuote, isDirty, saving } = useQuote(id);
+
+  // Initialize calculate hook only when quote is loaded
+  const calcHook = useCalculate(
+    quote?.poolData || {} as any, 
+    quote?.calculationResult?.overrides as any || {}
+  );
+
+  if (!quote) return <div className="p-8 text-center">Chargement du devis...</div>;
+
+  const handleLineUpdate = (index: number, updatedLine: QuoteLine) => {
+    const newLines = [...quote.lines];
+    newLines[index] = updatedLine;
+    updateQuote({ lines: newLines });
+  };
+
+  const handleLineRemove = (index: number) => {
+    const newLines = quote.lines.filter((_, i) => i !== index);
+    updateQuote({ lines: newLines });
+  };
+
+  const generatePDF = (type: 'internal' | 'client') => {
+    window.open(`/api/quotes/${id}/pdf?type=${type}`, '_blank');
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center">
+          <Button variant="ghost" className="mr-4 px-2" onClick={() => navigate('/')}>
+            <ChevronLeft size={20} />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+              {quote.reference}
+              {isDirty && <span className="flex h-3 w-3 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span></span>}
+            </h1>
+            <p className="text-sm text-gray-500">{quote.clientName} • {saving ? 'Enregistrement...' : (isDirty ? 'Modifications non sauvegardées' : 'Toutes les modifications sont sauvegardées')}</p>
+          </div>
+        </div>
+        <QuoteActions quote={quote} updateStatus={(status) => updateQuote({ status })} generatePDF={generatePDF} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="text-lg font-medium mb-4">Détails du client</h3>
+            <div className="space-y-4">
+              <Input 
+                label="Nom du client" 
+                value={quote.clientName} 
+                onChange={e => updateQuote({ clientName: e.target.value })} 
+              />
+              <Input 
+                label="Email du client" 
+                type="email" 
+                value={quote.clientEmail || ''} 
+                onChange={e => updateQuote({ clientEmail: e.target.value })} 
+              />
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <Step1_PoolDimensions 
+              input={calcHook.input} 
+              updateInput={(k, v) => { calcHook.updateInput(k, v); updateQuote({ poolData: { ...calcHook.input, [k]: v } }); }} 
+            />
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <Step2_PoolOptions 
+              input={calcHook.input} 
+              updateOption={(k, v) => { calcHook.updateOption(k, v); updateQuote({ poolData: { ...calcHook.input, options: { ...calcHook.input.options, [k]: v } } }); }} 
+            />
+          </div>
+        </div>
+
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Moteur hydraulique</h3>
+              {Object.keys(calcHook.userOverrides).length > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => { calcHook.resetAllOverrides(); updateQuote({}); }} className="text-yellow-600">
+                  Effacer toutes les surcharges
+                </Button>
+              )}
+            </div>
+            <Step3_Results 
+              result={calcHook.result || quote.calculationResult} 
+              loading={calcHook.loading} 
+              setOverride={(k, v) => { calcHook.setOverride(k, v); updateQuote({}); }} 
+              resetOverride={(k) => { calcHook.resetOverride(k); updateQuote({}); }} 
+            />
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="text-lg font-medium mb-4">Devis d'équipement</h3>
+            <QuoteTable 
+              lines={quote.lines || []} 
+              updateLine={handleLineUpdate} 
+              removeLine={handleLineRemove} 
+            />
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+             <h3 className="text-lg font-medium mb-4">Aperçu visuel 3D</h3>
+             <PoolVisual quoteId={quote.id} />
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="text-lg font-medium mb-4">Notes internes</h3>
+            <textarea
+              className="w-full h-32 rounded-md border border-gray-300 p-3 text-sm focus:ring-primary-500 focus:border-primary-500"
+              placeholder="Ajoutez des notes internes ici..."
+              value={quote.internalNotes || ''}
+              onChange={e => updateQuote({ internalNotes: e.target.value })}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default QuoteDetail;

@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+.overridden-field {
+  @apply text-yellow-600 font-semibold relative;
+}
+
+.overridden-field::after {
+  content: '';
+  @apply absolute -top-1 -right-2 w-2 h-2 bg-yellow-500 rounded-full;
+}
