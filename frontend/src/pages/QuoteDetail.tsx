@@ -175,7 +175,6 @@ const QuoteDetail = () => {
             </div>
           </div>
 
-          </div>
         </div>
       </div>
     </div>
