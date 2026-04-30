@@ -6,8 +6,9 @@ import { Input } from '../components/ui/Input';
 import { Droplet } from 'lucide-react';
 
 const Login = () => {
-  const [email, setEmail] = useState('admin@peep.local');
-  const [password, setPassword] = useState('password123');
+  // 🔒 Fix #19 : champs vides — les credentials pré-remplis exposaient le compte admin
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 

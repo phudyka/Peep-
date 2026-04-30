@@ -2,16 +2,42 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { Button } from '../components/ui/Button';
-import { Plus, FileText, Upload } from 'lucide-react';
+import { Plus, FileText, Upload, AlertCircle } from 'lucide-react';
 import { Quote } from '../types';
 
 const Dashboard = () => {
   const [quotes, setQuotes] = useState<Quote[]>([]);
+  // 🐛 Fix #23 : état d'erreur sur le fetch
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get('/quotes').then(res => setQuotes(res.data));
+    api.get('/quotes')
+      .then(res => setQuotes(res.data))
+      .catch(() => setFetchError('Impossible de charger les devis. Vérifiez votre connexion.'));
   }, []);
+
+  // 🧹 Fix #24 : fonction d'import CSV (ouvre un input file caché)
+  const handleImportCsv = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const form = new FormData();
+      form.append('file', file);
+      try {
+        const { data } = await api.post('/catalog/import', form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        alert(`Import terminé : ${data.stats.created} créés, ${data.stats.updated} mis à jour, ${data.stats.skipped} ignorés, ${data.stats.errors} erreurs.`);
+      } catch {
+        alert('Échec de l\'import du catalogue.');
+      }
+    };
+    input.click();
+  };
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
@@ -21,7 +47,7 @@ const Dashboard = () => {
           <p className="mt-1 text-sm text-gray-500">Gérez vos devis et votre catalogue.</p>
         </div>
         <div className="flex gap-4">
-          <Button variant="secondary" onClick={() => {/* Handle CSV Upload */}}>
+          <Button variant="secondary" onClick={handleImportCsv}>
             <Upload className="mr-2 h-4 w-4" /> Importer le catalogue
           </Button>
           <Button onClick={() => navigate('/quote/new')}>
@@ -30,11 +56,19 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* 🐛 Fix #23 : affichage de l'erreur */}
+      {fetchError && (
+        <div className="mb-6 flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <AlertCircle size={18} className="shrink-0" />
+          {fetchError}
+        </div>
+      )}
+
       <div className="bg-white shadow overflow-hidden sm:rounded-md border border-gray-200">
         <ul className="divide-y divide-gray-200">
           {quotes.map(quote => (
             <li key={quote.id}>
-              <button 
+              <button
                 onClick={() => navigate(`/quote/${quote.id}`)}
                 className="block hover:bg-gray-50 w-full text-left transition duration-150 ease-in-out"
               >
@@ -48,24 +82,24 @@ const Dashboard = () => {
                   </div>
                   <div className="flex items-center gap-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                      ${quote.status === 'DRAFT' ? 'bg-gray-100 text-gray-800' :
-                        quote.status === 'SENT' ? 'bg-blue-100 text-blue-800' :
+                      ${quote.status === 'DRAFT'    ? 'bg-gray-100 text-gray-800' :
+                        quote.status === 'SENT'     ? 'bg-blue-100 text-blue-800' :
                         quote.status === 'ACCEPTED' ? 'bg-green-100 text-green-800' :
                         'bg-red-100 text-red-800'}`}>
-                      {quote.status === 'DRAFT' ? 'BROUILLON' :
-                        quote.status === 'SENT' ? 'ENVOYÉ' :
-                        quote.status === 'ACCEPTED' ? 'ACCEPTÉ' :
-                        'REFUSÉ'}
+                      {quote.status === 'DRAFT'    ? 'BROUILLON' :
+                       quote.status === 'SENT'     ? 'ENVOYÉ' :
+                       quote.status === 'ACCEPTED' ? 'ACCEPTÉ' :
+                       'REFUSÉ'}
                     </span>
                     <span className="text-sm text-gray-500">
-                      {new Date(quote.createdAt!).toLocaleDateString()}
+                      {new Date(quote.createdAt!).toLocaleDateString('fr-FR')}
                     </span>
                   </div>
                 </div>
               </button>
             </li>
           ))}
-          {quotes.length === 0 && (
+          {!fetchError && quotes.length === 0 && (
             <li className="px-4 py-8 text-center text-gray-500">
               Aucun devis trouvé. Créez votre premier devis !
             </li>

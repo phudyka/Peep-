@@ -21,6 +21,9 @@ export interface CalcParams {
   filteringSpeed: number;
   sandPerM2: number;
   flowMultiplier: number;
+  // 🐛 Fix #17 : ces champs étaient dans CalcSettings mais ignorés
+  spaFlowAddition: number;        // m³/h ajoutés si spa (défaut DB = 4)
+  counterCurrentAddition: number; // m³/h ajoutés si nage à contre-courant (défaut DB = 3)
 }
 
 export interface InstallationResult {
@@ -75,16 +78,17 @@ export function runHydraulicEngine(
   const baseFlowRateCalc = volume / params.filteringTime;
   const baseFlowRate = applyOverride('baseFlowRate', baseFlowRateCalc);
 
-  // Step 3 — Adjusted flow rate
+  // Step 3 — Adjusted flow rate (utilise les valeurs de CalcSettings)
   let adjustedFlowRateCalc = baseFlowRate * params.flowMultiplier;
-  if (input.options.spa) adjustedFlowRateCalc += 4; // Add spa addition from params theoretically, hardcoded fallback
-  if (input.options.counterCurrent) adjustedFlowRateCalc += 3;
+  if (input.options.spa)            adjustedFlowRateCalc += params.spaFlowAddition;
+  if (input.options.counterCurrent) adjustedFlowRateCalc += params.counterCurrentAddition;
   const adjustedFlowRate = applyOverride('adjustedFlowRate', adjustedFlowRateCalc);
 
   // Step 4 — Pump power
   const pumpPowerRawCalc = (adjustedFlowRate * params.hmt) / (3600 * params.pumpEfficiency);
   const pumpPowerRaw = applyOverride('pumpPowerRaw', pumpPowerRawCalc);
   
+  // ⚡ standardPowers déplacé en constante module (hors de la fonction) dans le refactor suivant
   const standardPowers = [0.25, 0.33, 0.5, 0.75, 1.1, 1.5, 2.2];
   let pumpPowerCalc = standardPowers.find(p => p >= pumpPowerRaw) || standardPowers[standardPowers.length - 1];
   const pumpPower = applyOverride('pumpPower', pumpPowerCalc);

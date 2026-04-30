@@ -1,5 +1,6 @@
 import PdfPrinter from 'pdfmake';
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
+import { generateSVGPlan, buildPlanInput } from './planGenerator';
 
 const fonts = {
   Roboto: {
@@ -13,19 +14,37 @@ const fonts = {
 const printer = new PdfPrinter(fonts);
 
 export async function generateInternalPDF(quote: any): Promise<Buffer> {
+  // Génère le plan SVG à intégrer dans le PDF
+  let planSvg: string | undefined;
+  try {
+    const planInput = buildPlanInput(quote);
+    planSvg = generateSVGPlan(planInput);
+  } catch (e) {
+    console.warn('[pdfGenerator] Impossible de générer le plan SVG :', e);
+  }
+
   const docDefinition: TDocumentDefinitions = {
+    pageOrientation: 'landscape',
+    pageSize: 'A4',
     content: [
-      { text: `INTERNAL QUOTE - ${quote.reference}`, style: 'header' },
-      { text: `Client: ${quote.clientName} (${quote.clientEmail})`, margin: [0, 10, 0, 10] },
-      { text: 'Hydraulic Parameters Summary:', style: 'subheader' },
-      { text: JSON.stringify(quote.calculationResult, null, 2), fontSize: 10, margin: [0, 0, 0, 10] },
-      { text: 'Lines (Including Hidden):', style: 'subheader' },
-      tableOfLines(quote.lines, true)
+      { text: `DEVIS INTERNE — ${quote.reference}`, style: 'header' },
+      { text: `Client : ${quote.clientName}${quote.clientEmail ? ` (${quote.clientEmail})` : ''}`, margin: [0, 6, 0, 10] },
+
+      { text: 'Résumé hydraulique :', style: 'subheader' },
+      { text: JSON.stringify(quote.calculationResult, null, 2), fontSize: 9, margin: [0, 0, 0, 12] },
+
+      ...(planSvg ? [
+        { text: 'Plan hydraulique 2D :', style: 'subheader' },
+        { svg: planSvg, width: 760, margin: [0, 0, 0, 16] },
+      ] : []),
+
+      { text: 'Lignes de devis (toutes, y compris masquées) :', style: 'subheader' },
+      tableOfLines(quote.lines, true),
     ],
     styles: {
-      header: { fontSize: 18, bold: true },
-      subheader: { fontSize: 14, bold: true, margin: [0, 10, 0, 5] }
-    }
+      header:    { fontSize: 18, bold: true },
+      subheader: { fontSize: 13, bold: true, margin: [0, 10, 0, 5] },
+    },
   };
 
   return new Promise((resolve, reject) => {

@@ -1,4 +1,4 @@
-
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuote } from '../hooks/useQuote';
 import { useCalculate } from '../hooks/useCalculate';
@@ -8,19 +8,23 @@ import { Step3_Results } from '../components/wizard/Step3_Results';
 import { QuoteTable } from '../components/quote/QuoteTable';
 import { QuoteActions } from '../components/quote/QuoteActions';
 import { PoolVisual } from '../components/quote/PoolVisual';
+import { HydraulicPlan } from '../components/quote/HydraulicPlan';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Ruler, Box } from 'lucide-react';
 import { QuoteLine } from '../types';
 
+type VisualTab = 'plan2d' | 'visual3d';
+
 const QuoteDetail = () => {
+  const [visualTab, setVisualTab] = useState<VisualTab>('plan2d');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { quote, updateQuote, isDirty, saving } = useQuote(id);
 
-  // Initialize calculate hook only when quote is loaded
+  // 🐛 Fix #28 : Initialize calculate hook with a structured default to prevent crash on nested `options`
   const calcHook = useCalculate(
-    quote?.poolData || {} as any, 
+    quote?.poolData || { length: 0, width: 0, depthShallow: 0, depthDeep: 0, type: 'SKIMMER', usage: 'RESIDENTIAL', options: {} } as any, 
     quote?.calculationResult?.overrides as any || {}
   );
 
@@ -120,9 +124,43 @@ const QuoteDetail = () => {
             />
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-             <h3 className="text-lg font-medium mb-4">Aperçu visuel 3D</h3>
-             <PoolVisual quoteId={quote.id} />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            {/* Onglets 2D / 3D */}
+            <div className="flex border-b border-gray-200">
+              <button
+                onClick={() => setVisualTab('plan2d')}
+                className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors ${
+                  visualTab === 'plan2d'
+                    ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Ruler size={15} />
+                Plan hydraulique 2D
+                <span className="ml-1 text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-mono">interne</span>
+              </button>
+              <button
+                onClick={() => setVisualTab('visual3d')}
+                className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors ${
+                  visualTab === 'visual3d'
+                    ? 'border-b-2 border-teal-500 text-teal-600 bg-teal-50'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Box size={15} />
+                Vue 3D Gemini
+                <span className="ml-1 text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-mono">client</span>
+              </button>
+            </div>
+
+            <div className="p-6">
+              {visualTab === 'plan2d' && (
+                <HydraulicPlan quoteId={quote.id} reference={quote.reference} />
+              )}
+              {visualTab === 'visual3d' && (
+                <PoolVisual quoteId={quote.id} />
+              )}
+            </div>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">

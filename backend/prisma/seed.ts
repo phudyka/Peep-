@@ -4,7 +4,13 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  const adminPassword = await bcrypt.hash('password123', 10);
+  // 🔒 Fix #18 : mot de passe lu depuis SEED_ADMIN_PASSWORD (env var)
+  //   En production, définissez cette variable. En dev, le fallback 'password123' est accepté.
+  const rawPassword = process.env.SEED_ADMIN_PASSWORD || 'password123';
+  if (!process.env.SEED_ADMIN_PASSWORD) {
+    console.warn('[SECURITY] SEED_ADMIN_PASSWORD non défini — mot de passe par défaut utilisé.');
+  }
+  const adminPassword = await bcrypt.hash(rawPassword, 12);
 
   const admin = await prisma.user.upsert({
     where: { email: 'admin@peep.local' },

@@ -26,6 +26,8 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
       - ./backend/uploads:/app/uploads
+      - ./maria-logo.png:/logos/maria-logo.png:ro
+      - ./peep-logo.png:/logos/peep-logo.png:ro
     depends_on:
       - postgres
     networks:

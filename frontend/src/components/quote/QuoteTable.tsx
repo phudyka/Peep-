@@ -31,29 +31,29 @@ export const QuoteTable: React.FC<Props> = ({ lines, updateLine, removeLine }) =
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {lines.map((line, idx) => (
-            <tr key={idx} className={!line.visible ? 'bg-gray-50 opacity-75' : ''}>
+            <tr key={line.id || `line-${idx}`} className={!line.visible ? 'bg-gray-50 opacity-75' : ''}>
               <td className="px-4 py-2 text-sm text-gray-900">{line.product?.name || 'Inconnu'}</td>
               <td className="px-4 py-2 w-24">
                 <Input 
                   type="number" 
-                  value={line.quantity} 
-                  onChange={e => updateLine(idx, { ...line, quantity: parseFloat(e.target.value) || 0, isManuallyEdited: true })}
+                  value={line.quantity === 0 ? '' : line.quantity} 
+                  onChange={e => updateLine(idx, { ...line, quantity: e.target.value === '' ? 0 : parseFloat(e.target.value), isManuallyEdited: true })}
                   className="h-8 text-sm"
                 />
               </td>
               <td className="px-4 py-2 w-32">
                 <Input 
                   type="number" 
-                  value={line.unitPrice} 
-                  onChange={e => updateLine(idx, { ...line, unitPrice: parseFloat(e.target.value) || 0, isManuallyEdited: true })}
+                  value={line.unitPrice === 0 ? '' : line.unitPrice} 
+                  onChange={e => updateLine(idx, { ...line, unitPrice: e.target.value === '' ? 0 : parseFloat(e.target.value), isManuallyEdited: true })}
                   className="h-8 text-sm"
                 />
               </td>
               <td className="px-4 py-2 w-24">
                 <Input 
                   type="number" 
-                  value={line.discount} 
-                  onChange={e => updateLine(idx, { ...line, discount: parseFloat(e.target.value) || 0, isManuallyEdited: true })}
+                  value={line.discount === 0 ? '' : line.discount} 
+                  onChange={e => updateLine(idx, { ...line, discount: e.target.value === '' ? 0 : parseFloat(e.target.value), isManuallyEdited: true })}
                   className="h-8 text-sm"
                 />
               </td>

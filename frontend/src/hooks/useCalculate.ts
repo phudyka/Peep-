@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { PoolInput, InstallationResult } from '../types';
 
@@ -8,14 +8,32 @@ export function useCalculate(initialInput: PoolInput, initialOverrides: Record<s
   const [result, setResult] = useState<InstallationResult | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // 🐛 Fix #22 : resynchronise le state interne quand initialInput change significativement
+  // (cas typique : QuoteDetail monte avec quote=null, puis quote arrive depuis l'API)
+  const isFirstRender = useRef(true);
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    // On ne resync que si le pool a des dimensions réelles (non l'objet vide par défaut)
+    if (initialInput && (initialInput as any).length) {
+      setInput(initialInput);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialInput?.length, initialInput?.width, initialInput?.type, initialInput?.usage]);
+
+  useEffect(() => {
+    // Pas de calcul si les dimensions sont manquantes
+    if (!input?.length || !input?.width) return;
+
     const calculate = async () => {
       setLoading(true);
       try {
         const { data } = await api.post('/calculate', { poolData: input, userOverrides });
         setResult(data);
       } catch (error) {
-        console.error('Calculation failed', error);
+        console.error('[useCalculate] Calcul échoué:', error);
       } finally {
         setLoading(false);
       }
@@ -39,15 +57,13 @@ export function useCalculate(initialInput: PoolInput, initialOverrides: Record<s
 
   const resetOverride = (key: string) => {
     setUserOverrides(prev => {
-      const newOverrides = { ...prev };
-      delete newOverrides[key];
-      return newOverrides;
+      const next = { ...prev };
+      delete next[key];
+      return next;
     });
   };
 
-  const resetAllOverrides = () => {
-    setUserOverrides({});
-  };
+  const resetAllOverrides = () => setUserOverrides({});
 
   return { input, updateInput, updateOption, result, loading, userOverrides, setOverride, resetOverride, resetAllOverrides };
 }

@@ -5,24 +5,32 @@ export interface AuthRequest extends Request {
   user?: { id: string; role: string; email: string };
 }
 
+// 🔒 Fix #2 : warn at startup if JWT_SECRET is not set in environment
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.warn('[SECURITY] JWT_SECRET is not set. Using insecure default. Set JWT_SECRET in production!');
+}
+const EFFECTIVE_SECRET = JWT_SECRET || 'supersecretjwtkey';
+
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
   const token = req.header('Authorization')?.replace('Bearer ', '');
   if (!token) {
-    return res.status(401).json({ error: 'Access denied. No token provided.' });
+    return res.status(401).json({ error: 'Accès refusé. Aucun token fourni.' });
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecretjwtkey') as any;
+    const decoded = jwt.verify(token, EFFECTIVE_SECRET) as any;
     req.user = decoded;
     next();
-  } catch (ex) {
-    res.status(400).json({ error: 'Invalid token.' });
+  } catch {
+    // 🐛 Fix #1 : 401 (Unauthorized) et non 400 (Bad Request) pour un token invalide/expiré
+    res.status(401).json({ error: 'Token invalide ou expiré.' });
   }
 };
 
 export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
   if (req.user?.role !== 'ADMIN') {
-    return res.status(403).json({ error: 'Access denied. Admin role required.' });
+    return res.status(403).json({ error: 'Accès refusé. Rôle ADMIN requis.' });
   }
   next();
 };

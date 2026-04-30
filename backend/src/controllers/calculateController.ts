@@ -16,13 +16,16 @@ export const calculateHydraulics = async (req: AuthRequest, res: Response) => {
     // Prepare params (allow userOverrides to override DB settings)
     const isPublic = poolData.usage === 'PUBLIC';
     const params: CalcParams = {
-      filteringTime: userOverrides?.filteringTime ?? (isPublic ? settings.publicFilteringTime : settings.residentialFilteringTime),
-      hmt: userOverrides?.hmt ?? (isPublic ? settings.publicHMT : settings.residentialHMT),
-      pumpEfficiency: userOverrides?.pumpEfficiency ?? settings.pumpEfficiency,
-      m3PerSkimmer: userOverrides?.m3PerSkimmer ?? settings.m3PerSkimmer,
-      filteringSpeed: userOverrides?.filteringSpeed ?? settings.filteringSpeed,
-      sandPerM2: userOverrides?.sandPerM2 ?? settings.sandPerM2,
-      flowMultiplier: userOverrides?.flowMultiplier ?? (poolData.type === 'OVERFLOW' ? settings.overflowFlowMultiplier : 1),
+      filteringTime:          userOverrides?.filteringTime ?? (isPublic ? settings.publicFilteringTime : settings.residentialFilteringTime),
+      hmt:                    userOverrides?.hmt ?? (isPublic ? settings.publicHMT : settings.residentialHMT),
+      pumpEfficiency:         userOverrides?.pumpEfficiency ?? settings.pumpEfficiency,
+      m3PerSkimmer:           userOverrides?.m3PerSkimmer ?? settings.m3PerSkimmer,
+      filteringSpeed:         userOverrides?.filteringSpeed ?? settings.filteringSpeed,
+      sandPerM2:              userOverrides?.sandPerM2 ?? settings.sandPerM2,
+      flowMultiplier:         userOverrides?.flowMultiplier ?? (poolData.type === 'OVERFLOW' ? settings.overflowFlowMultiplier : 1),
+      // Fix #17 : transmis depuis la DB, plus hardcodés dans le moteur
+      spaFlowAddition:        settings.spaFlowAddition,
+      counterCurrentAddition: settings.counterCurrentAddition,
     };
 
     const result = runHydraulicEngine(poolData as PoolInput, params, userOverrides || {});
