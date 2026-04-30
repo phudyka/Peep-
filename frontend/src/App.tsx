@@ -13,7 +13,7 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
 function App() {
   return (
     <Router>
-      <div className="min-h-screen">
+      <div className="h-screen w-screen overflow-hidden bg-gray-50 flex flex-col">
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />

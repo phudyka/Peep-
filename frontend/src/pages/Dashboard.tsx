@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { Button } from '../components/ui/Button';
-import { Plus, FileText, Upload, AlertCircle } from 'lucide-react';
+import { Plus, FileText, Upload, AlertCircle, Trash2 } from 'lucide-react';
 import { Quote } from '../types';
 
 const Dashboard = () => {
@@ -12,10 +12,26 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    fetchQuotes();
+  }, []);
+
+  const fetchQuotes = () => {
     api.get('/quotes')
       .then(res => setQuotes(res.data))
       .catch(() => setFetchError('Impossible de charger les devis. Vérifiez votre connexion.'));
-  }, []);
+  };
+
+  const handleDeleteQuote = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation(); // Prevents navigating to the quote
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce devis ? Cette action est irréversible.")) {
+      try {
+        await api.delete(`/quotes/${id}`);
+        fetchQuotes();
+      } catch (err) {
+        alert("Erreur lors de la suppression du devis.");
+      }
+    }
+  };
 
   // 🧹 Fix #24 : fonction d'import CSV (ouvre un input file caché)
   const handleImportCsv = () => {
@@ -40,8 +56,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="flex flex-col h-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 w-full">
+      <div className="flex justify-between items-center mb-8 shrink-0">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
           <p className="mt-1 text-sm text-gray-500">Gérez vos devis et votre catalogue.</p>
@@ -64,13 +80,13 @@ const Dashboard = () => {
         </div>
       )}
 
-      <div className="bg-white shadow overflow-hidden sm:rounded-md border border-gray-200">
+      <div className="bg-white shadow sm:rounded-md border border-gray-200 flex-1 overflow-y-auto min-h-0">
         <ul className="divide-y divide-gray-200">
           {quotes.map(quote => (
             <li key={quote.id}>
-              <button
+              <div
                 onClick={() => navigate(`/quote/${quote.id}`)}
-                className="block hover:bg-gray-50 w-full text-left transition duration-150 ease-in-out"
+                className="block hover:bg-gray-50 w-full text-left transition duration-150 ease-in-out cursor-pointer"
               >
                 <div className="px-4 py-4 sm:px-6 flex items-center justify-between">
                   <div className="flex items-center">
@@ -94,9 +110,16 @@ const Dashboard = () => {
                     <span className="text-sm text-gray-500">
                       {new Date(quote.createdAt!).toLocaleDateString('fr-FR')}
                     </span>
+                    <button 
+                      onClick={(e) => handleDeleteQuote(e, quote.id!)}
+                      className="ml-4 text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors"
+                      title="Supprimer ce devis"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
                 </div>
-              </button>
+              </div>
             </li>
           ))}
           {!fetchError && quotes.length === 0 && (

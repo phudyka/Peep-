@@ -90,3 +90,17 @@ export const updateQuote = async (req: AuthRequest, res: Response) => {
 
   res.json(quote);
 };
+
+export const deleteQuote = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  try {
+    // Les lignes associées seront supprimées automatiquement si onDelete: Cascade est configuré dans le schéma,
+    // sinon Prisma lèvera une erreur. Mais dans Prisma, par défaut c'est géré manuellement ou en cascade.
+    // Ajoutons la suppression des lignes par sécurité.
+    await prisma.quoteLine.deleteMany({ where: { quoteId: id } });
+    await prisma.quote.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to delete quote' });
+  }
+};

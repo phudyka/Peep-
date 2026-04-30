@@ -46,8 +46,8 @@ const QuoteDetail = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="flex flex-col h-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 w-full">
+      <div className="mb-6 flex items-center justify-between shrink-0">
         <div className="flex items-center">
           <Button variant="ghost" className="mr-4 px-2" onClick={() => navigate('/')}>
             <ChevronLeft size={20} />
@@ -63,8 +63,8 @@ const QuoteDetail = () => {
         <QuoteActions quote={quote} updateStatus={(status) => updateQuote({ status })} generatePDF={generatePDF} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 overflow-hidden min-h-0">
+        <div className="lg:col-span-3 space-y-6 overflow-y-auto pr-2 pb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-lg font-medium mb-4">Détails du client</h3>
             <div className="space-y-4">
@@ -97,7 +97,7 @@ const QuoteDetail = () => {
           </div>
         </div>
 
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-4 flex flex-col space-y-6 overflow-y-auto pr-2 pb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">Moteur hydraulique</h3>
@@ -115,6 +115,18 @@ const QuoteDetail = () => {
             />
           </div>
 
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex-1">
+            <h3 className="text-lg font-medium mb-4">Notes internes</h3>
+            <textarea
+              className="w-full h-full min-h-[8rem] rounded-md border border-gray-300 p-3 text-sm focus:ring-primary-500 focus:border-primary-500 resize-none"
+              placeholder="Ajoutez des notes internes ici..."
+              value={quote.internalNotes || ''}
+              onChange={e => updateQuote({ internalNotes: e.target.value })}
+            />
+          </div>
+        </div>
+
+        <div className="lg:col-span-5 flex flex-col space-y-6 overflow-y-auto pr-2 pb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-lg font-medium mb-4">Devis d'équipement</h3>
             <QuoteTable 
@@ -163,14 +175,6 @@ const QuoteDetail = () => {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <h3 className="text-lg font-medium mb-4">Notes internes</h3>
-            <textarea
-              className="w-full h-32 rounded-md border border-gray-300 p-3 text-sm focus:ring-primary-500 focus:border-primary-500"
-              placeholder="Ajoutez des notes internes ici..."
-              value={quote.internalNotes || ''}
-              onChange={e => updateQuote({ internalNotes: e.target.value })}
-            />
           </div>
         </div>
       </div>

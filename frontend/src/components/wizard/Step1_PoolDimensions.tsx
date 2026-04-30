@@ -16,25 +16,25 @@ export const Step1_PoolDimensions: React.FC<Props> = ({ input, updateInput }) =>
           label="Longueur (m)" 
           type="number" 
           value={input.length} 
-          onChange={e => updateInput('length', parseFloat(e.target.value))} 
+          onChange={e => updateInput('length', e.target.value === '' ? '' : parseFloat(e.target.value))} 
         />
         <Input 
           label="Largeur (m)" 
           type="number" 
           value={input.width} 
-          onChange={e => updateInput('width', parseFloat(e.target.value))} 
+          onChange={e => updateInput('width', e.target.value === '' ? '' : parseFloat(e.target.value))} 
         />
         <Input 
           label="Petit bain (m)" 
           type="number" 
           value={input.depthShallow} 
-          onChange={e => updateInput('depthShallow', parseFloat(e.target.value))} 
+          onChange={e => updateInput('depthShallow', e.target.value === '' ? '' : parseFloat(e.target.value))} 
         />
         <Input 
           label="Grand bain (m)" 
           type="number" 
           value={input.depthDeep} 
-          onChange={e => updateInput('depthDeep', parseFloat(e.target.value))} 
+          onChange={e => updateInput('depthDeep', e.target.value === '' ? '' : parseFloat(e.target.value))} 
         />
       </div>
       <div className="mt-4">
