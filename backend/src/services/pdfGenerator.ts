@@ -28,14 +28,14 @@ export async function generateInternalPDF(quote: any): Promise<Buffer> {
     pageSize: 'A4',
     content: [
       { text: `DEVIS INTERNE — ${quote.reference}`, style: 'header' },
-      { text: `Client : ${quote.clientName}${quote.clientEmail ? ` (${quote.clientEmail})` : ''}`, margin: [0, 6, 0, 10] },
+      { text: `Client : ${quote.clientName}${quote.clientEmail ? ` (${quote.clientEmail})` : ''}`, margin: [0, 6, 0, 10] as [number, number, number, number] },
 
       { text: 'Résumé hydraulique :', style: 'subheader' },
-      { text: JSON.stringify(quote.calculationResult, null, 2), fontSize: 9, margin: [0, 0, 0, 12] },
+      { text: JSON.stringify(quote.calculationResult, null, 2), fontSize: 9, margin: [0, 0, 0, 12] as [number, number, number, number] },
 
       ...(planSvg ? [
         { text: 'Plan hydraulique 2D :', style: 'subheader' },
-        { svg: planSvg, width: 760, margin: [0, 0, 0, 16] },
+        { svg: planSvg, width: 760, margin: [0, 0, 0, 16] as [number, number, number, number] },
       ] : []),
 
       { text: 'Lignes de devis (toutes, y compris masquées) :', style: 'subheader' },
@@ -43,7 +43,7 @@ export async function generateInternalPDF(quote: any): Promise<Buffer> {
     ],
     styles: {
       header:    { fontSize: 18, bold: true },
-      subheader: { fontSize: 13, bold: true, margin: [0, 10, 0, 5] },
+      subheader: { fontSize: 13, bold: true, margin: [0, 10, 0, 5] as [number, number, number, number] },
     },
   };
 
@@ -61,14 +61,14 @@ export async function generateClientPDF(quote: any): Promise<Buffer> {
   const docDefinition: TDocumentDefinitions = {
     content: [
       { text: `QUOTE - ${quote.reference}`, style: 'header' },
-      { text: `Client: ${quote.clientName}`, margin: [0, 10, 0, 10] },
+      { text: `Client: ${quote.clientName}`, margin: [0, 10, 0, 10] as [number, number, number, number] },
       { text: 'Equipment List:', style: 'subheader' },
       tableOfLines(quote.lines.filter((l: any) => l.visible), false),
-      { text: '\nCompany Details Footer...', margin: [0, 20, 0, 0], alignment: 'center', fontSize: 10 }
+      { text: '\nCompany Details Footer...', margin: [0, 20, 0, 0] as [number, number, number, number], alignment: 'center', fontSize: 10 }
     ],
     styles: {
       header: { fontSize: 22, bold: true, alignment: 'center' },
-      subheader: { fontSize: 14, bold: true, margin: [0, 10, 0, 5] }
+      subheader: { fontSize: 14, bold: true, margin: [0, 10, 0, 5] as [number, number, number, number] }
     }
   };
 
