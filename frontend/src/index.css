@@ -4,15 +4,20 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-background text-foreground;
+  }
+  
+  * {
+    @apply border-default-400/20;
   }
 }
 
-.overridden-field {
-  @apply text-yellow-600 font-semibold relative;
+.field-overridden {
+  @apply border-amber-500/60 bg-amber-950/20 text-amber-300;
 }
 
-.overridden-field::after {
+.field-overridden-dot::after {
   content: '';
-  @apply absolute -top-1 -right-2 w-2 h-2 bg-yellow-500 rounded-full;
+  @apply absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400;
+  box-shadow: 0 0 0 2px #07090f;
 }

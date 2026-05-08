@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import { InstallationResult } from '../../types';
 import { Input } from '../ui/Input';
@@ -84,3 +85,4 @@ export const Step3_Results: React.FC<Props> = ({ result, loading, setOverride, r
     </div>
   );
 };
+

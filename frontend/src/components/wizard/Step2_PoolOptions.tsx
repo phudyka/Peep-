@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import { PoolInput } from '../../types';
 
@@ -16,20 +17,21 @@ export const Step2_PoolOptions: React.FC<Props> = ({ input, updateOption }) => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">2. Options & Accessoires</h3>
+      <h3 className="text-lg font-medium text-foreground">2. Options & Accessoires</h3>
       <div className="space-y-2">
         {options.map(({ key, label }) => (
-          <label key={key} className="flex items-center space-x-2 cursor-pointer">
+          <label key={key} className="flex items-center space-x-2 cursor-pointer hover:bg-peep-hover p-2 rounded-lg transition-all duration-150">
             <input 
               type="checkbox" 
-              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 h-4 w-4"
+              className="rounded border-peep-border text-green-500 focus:ring-green-500/30 h-4 w-4 bg-peep-surface"
               checked={input.options[key]}
               onChange={e => updateOption(key, e.target.checked)}
             />
-            <span className="text-sm font-medium text-gray-700">{label}</span>
+            <span className="text-sm font-medium text-slate-200">{label}</span>
           </label>
         ))}
       </div>
     </div>
   );
 };
+

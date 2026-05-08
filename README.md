@@ -69,7 +69,7 @@ L'application est entièrement **conteneurisée via Docker Compose** et tourne s
 
 | Composant  | Technologie                                     | Port |
 | :--------- | :---------------------------------------------- | :--- |
-| Frontend   | React 18, Vite, TypeScript, TailwindCSS, Axios   | 80   |
+| Frontend   | React 18, Vite, TypeScript, TailwindCSS, HeroUI (@heroui/react), Axios   | 80   |
 | Backend    | Node.js, Express, TypeScript, Prisma ORM         | 3001 |
 | Base de données | PostgreSQL 15                              | 5432 |
 | PDF        | pdfmake                                         | —    |

@@ -4,11 +4,62 @@ export interface User {
   role: 'ADMIN' | 'COMMERCIAL';
 }
 
-export interface PoolInput {
+// ─── Formes de piscine ────────────────────────────────────────────────────────
+
+export type PoolShape = 'RECTANGULAR' | 'ROUND' | 'OVAL' | 'L_SHAPE' | 'FREEFORM';
+
+export interface ShapeParamsRectangular {
+  shape: 'RECTANGULAR';
   length: number;
   width: number;
+}
+
+export interface ShapeParamsRound {
+  shape: 'ROUND';
+  diameter: number;
+}
+
+export interface ShapeParamsOval {
+  shape: 'OVAL';
+  majorAxis: number;
+  minorAxis: number;
+}
+
+export interface ShapeParamsLShape {
+  shape: 'L_SHAPE';
+  length1: number;
+  width1: number;
+  length2: number;
+  width2: number;
+}
+
+export interface ShapeParamsFreeform {
+  shape: 'FREEFORM';
+  surfaceArea: number;
+}
+
+export type ShapeParams =
+  | ShapeParamsRectangular
+  | ShapeParamsRound
+  | ShapeParamsOval
+  | ShapeParamsLShape
+  | ShapeParamsFreeform;
+
+// ─── Entrée moteur hydraulique ────────────────────────────────────────────────
+
+export interface PoolInput {
+  // Champs de forme (nouveaux)
+  shape: PoolShape;
+  shapeParams: ShapeParams;
+
+  // Profondeurs — présentes pour toutes les formes
   depthShallow: number;
   depthDeep: number;
+
+  // Rétro-compatibilité : conservés pour RECTANGULAR (utilisés aussi comme fallback)
+  length: number;
+  width: number;
+
   type: 'SKIMMER' | 'OVERFLOW' | 'ROMAN';
   usage: 'RESIDENTIAL' | 'PUBLIC';
   options: {
@@ -18,6 +69,8 @@ export interface PoolInput {
     lighting: boolean;
   };
 }
+
+// ─── Résultat du moteur ────────────────────────────────────────────────────────
 
 export interface InstallationResult {
   volume: number;
@@ -36,6 +89,8 @@ export interface InstallationResult {
   sand: number;
   overrides: Record<string, boolean>;
 }
+
+// ─── Devis ─────────────────────────────────────────────────────────────────────
 
 export interface QuoteLine {
   id?: string;
@@ -63,6 +118,8 @@ export interface Quote {
   id: string;
   reference: string;
   status: 'DRAFT' | 'SENT' | 'ACCEPTED' | 'REJECTED';
+  shape: PoolShape;
+  shapeParams: ShapeParams | null;
   poolData: PoolInput;
   calcParams: Record<string, number>;
   calculationResult: InstallationResult;

@@ -17,15 +17,15 @@ export function useCalculate(initialInput: PoolInput, initialOverrides: Record<s
       return;
     }
     // On ne resync que si le pool a des dimensions réelles (non l'objet vide par défaut)
-    if (initialInput && (initialInput as any).length) {
+    if (initialInput && initialInput.shapeParams) {
       setInput(initialInput);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialInput?.length, initialInput?.width, initialInput?.type, initialInput?.usage]);
+  }, [initialInput?.shape, initialInput?.shapeParams, initialInput?.type, initialInput?.usage]);
 
   useEffect(() => {
-    // Pas de calcul si les dimensions sont manquantes
-    if (!input?.length || !input?.width) return;
+    // Pas de calcul si les paramètres de forme sont absents
+    if (!input?.shape || !input?.shapeParams) return;
 
     const calculate = async () => {
       setLoading(true);
