@@ -123,3 +123,13 @@ model CalcSettings {
   updatedById String
   updatedBy   User     @relation(fields: [updatedById], references: [id])
 }
+
+model Settings {
+  id          String   @id @default(uuid())
+  companyName String   @default("ETS Maria")
+  address     String   @default("")
+  siret       String   @default("")
+  currency    String   @default("EUR")
+  lang        String   @default("fr")
+  updatedAt   DateTime @updatedAt
+}

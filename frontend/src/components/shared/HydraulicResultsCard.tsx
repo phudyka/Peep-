@@ -1,67 +1,45 @@
-// @ts-nocheck
 import React from 'react';
 import { InstallationResult } from '../../types';
 import { Card } from '../ui/Card';
-import { Input } from '../ui/Input';
-import { Button } from '../ui/Button';
-import { RefreshCw } from 'lucide-react';
-import { cn } from '../ui/Button';
+import { formatNumber } from '../../utils/format';
 
 interface Props {
   result: InstallationResult;
-  loading: boolean;
-  setOverride: (key: string, value: number) => void;
-  onRecalculate: () => void;
 }
 
-export const HydraulicResultsCard: React.FC<Props> = ({ result, loading, setOverride, onRecalculate }) => {
-  const overrides = result.overrides || {};
-  
-  const numInput = (label: string, key: keyof InstallationResult, value: number) => {
-    const isOverridden = overrides[key as string] !== undefined;
-    return (
-      <div className="relative">
-        <Input
-          label={label}
-          type="number"
-          value={value.toString()}
-          className={cn("font-mono", isOverridden && "field-overridden")}
-          onChange={(e) => setOverride(key as string, e.target.value === '' ? 0 : parseFloat(e.target.value))}
-        />
-        {isOverridden && (
-          <span className="field-overridden-dot" />
-        )}
-      </div>
-    );
-  };
+const Field = ({ label, value, unit = '' }: { label: string; value: number; unit?: string }) => (
+  <div>
+    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5">{label}</p>
+    <p className="font-mono text-sm text-slate-200">{formatNumber(value)}{unit && <span className="text-slate-500 ml-1">{unit}</span>}</p>
+  </div>
+);
 
+export const HydraulicResultsCard: React.FC<Props> = ({ result }) => {
   return (
     <Card className="w-full">
       <div className="space-y-6">
         <h3 className="text-lg font-bold text-slate-100">Résultats hydrauliques</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {numInput('Volume (m³)', 'volume', result.volume)}
-          {numInput('Débit de base (m³/h)', 'baseFlowRate', result.baseFlowRate)}
-          {numInput('Débit ajusté (m³/h)', 'adjustedFlowRate', result.adjustedFlowRate)}
-          {numInput('Skimmers', 'skimmers', result.skimmers)}
-          {numInput('Buses de refoulement', 'returns', result.returns)}
-          {numInput('Vannes', 'valves', result.valves)}
-          {numInput('Tuyau d\'aspiration (Ø mm)', 'suctionDiameter', result.suctionDiameter)}
-          {numInput('Tuyau de refoulement (Ø mm)', 'pressureDiameter', result.pressureDiameter)}
-          {numInput('Puissance pompe (kW)', 'pumpPower', result.pumpPower)}
-          {numInput('Surface de filtration (m²)', 'filterArea', result.filterArea)}
-          {numInput('Diamètre du filtre (mm)', 'filterDiameter', result.filterDiameter)}
-          {numInput('Sable requis (kg)', 'sand', result.sand)}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="space-y-4">
+            <Field label="Volume" value={result.volume} unit="m³" />
+            <Field label="Débit de base" value={result.baseFlowRate} unit="m³/h" />
+            <Field label="Débit ajusté" value={result.adjustedFlowRate} unit="m³/h" />
+          </div>
+          <div className="space-y-4">
+            <Field label="Skimmers" value={result.skimmers} />
+            <Field label="Buses de refoulement" value={result.returns} />
+            <Field label="Vannes" value={result.valves} />
+          </div>
+          <div className="space-y-4">
+            <Field label="Tuyau aspiration" value={result.suctionDiameter} unit="Ø mm" />
+            <Field label="Tuyau refoulement" value={result.pressureDiameter} unit="Ø mm" />
+            <Field label="Puissance pompe" value={result.pumpPower} unit="kW" />
+          </div>
         </div>
-        <div className="flex justify-end">
-          <Button 
-            variant="outline"
-            onClick={onRecalculate}
-            disabled={loading}
-          >
-            <RefreshCw size={16} className={cn(loading && 'animate-spin')} />
-            Recalculer
-          </Button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-[#1e2a3a]">
+          <Field label="Surface de filtration" value={result.filterArea} unit="m²" />
+          <Field label="Diamètre filtre" value={result.filterDiameter} unit="mm" />
+          <Field label="Sable requis" value={result.sand} unit="kg" />
         </div>
       </div>
     </Card>

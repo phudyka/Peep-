@@ -12,6 +12,11 @@ services:
       - pgdata:/var/lib/postgresql/data
     networks:
       - peep_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U peep"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -29,10 +34,10 @@ services:
       - ./maria-logo.png:/logos/maria-logo.png:ro
       - ./peep-logo.png:/logos/peep-logo.png:ro
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - peep_network
-    command: sh -c "npx prisma db push && npx ts-node prisma/seed.ts && npm start"
 
   frontend:
     build:

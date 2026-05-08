@@ -3,8 +3,10 @@ import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import { errorHandler } from './middleware/errorHandler';
 import authRoutes from './routes/auth';
+import usersRoutes from './routes/users';
 import quotesRoutes from './routes/quotes';
 import catalogRoutes from './routes/catalog';
+import settingsRoutes from './routes/settings';
 import calculateRoutes from './routes/calculate';
 import path from 'path';
 import fs from 'fs';
@@ -45,8 +47,10 @@ app.use('/uploads', express.static(uploadsDir));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/quotes', quotesRoutes);
 app.use('/api/catalog', catalogRoutes);
+app.use('/api/settings', settingsRoutes);
 app.use('/api/calculate', calculateRoutes);
 
 app.use(errorHandler);

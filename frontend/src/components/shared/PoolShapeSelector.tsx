@@ -2,12 +2,12 @@
 import React from 'react';
 import { PoolShape } from '../../types';
 
-interface ShapeMeta {
+export interface ShapeMeta {
   label: string;
   icon: React.ReactNode;
 }
 
-const SHAPE_META: Record<PoolShape, ShapeMeta> = {
+export const SHAPE_META: Record<PoolShape, ShapeMeta> = {
   RECTANGULAR: {
     label: 'Rectangulaire',
     icon: <svg viewBox="0 0 40 24" width="40" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="36" height="20" rx="1" /></svg>,

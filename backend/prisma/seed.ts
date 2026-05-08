@@ -1,24 +1,24 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // 🔒 Fix #18 : mot de passe lu depuis SEED_ADMIN_PASSWORD (env var)
-  //   En production, définissez cette variable. En dev, le fallback 'password123' est accepté.
   const rawPassword = process.env.SEED_ADMIN_PASSWORD || 'password123';
-  if (!process.env.SEED_ADMIN_PASSWORD) {
-    console.warn('[SECURITY] SEED_ADMIN_PASSWORD non défini — mot de passe par défaut utilisé.');
-  }
   const adminPassword = await bcrypt.hash(rawPassword, 12);
+  const now = new Date();
 
   const admin = await prisma.user.upsert({
     where: { email: 'admin@peep.local' },
     update: {},
     create: {
+      id: randomUUID(),
       email: 'admin@peep.local',
       passwordHash: adminPassword,
-      role: 'ADMIN',
+      role: Role.ADMIN,
+      createdAt: now,
+      updatedAt: now,
     },
   });
 
@@ -26,7 +26,20 @@ async function main() {
   if (!existingSettings) {
     await prisma.calcSettings.create({
       data: {
+        id: randomUUID(),
         updatedById: admin.id,
+        residentialFilteringTime: 6,
+        publicFilteringTime: 4,
+        residentialHMT: 8,
+        publicHMT: 12,
+        pumpEfficiency: 0.6,
+        m3PerSkimmer: 25,
+        filteringSpeed: 30,
+        sandPerM2: 300,
+        overflowFlowMultiplier: 1.3,
+        spaFlowAddition: 4,
+        counterCurrentAddition: 3,
+        updatedAt: now,
       },
     });
   }
