@@ -2,6 +2,17 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { prisma } from '../index';
 import { Role } from '@prisma/client';
+import { AuthRequest } from '../middleware/auth';
+
+/**
+ * Vérifie que l'utilisateur peut modifier le compte ciblé :
+ * - Un admin peut tout modifier.
+ * - Un utilisateur standard ne peut modifier que son propre compte.
+ */
+function canModifyUser(req: AuthRequest, targetId: string): boolean {
+  if (req.user?.role === 'ADMIN') return true;
+  return req.user?.id === targetId;
+}
 
 export const getUsers = async (req: Request, res: Response) => {
   try {
@@ -48,10 +59,20 @@ export const createUser = async (req: Request, res: Response) => {
   }
 };
 
-export const updateUser = async (req: Request, res: Response) => {
+export const updateUser = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+
+    if (!canModifyUser(req, id)) {
+      return res.status(403).json({ error: 'Accès refusé. Vous ne pouvez modifier que votre propre compte.' });
+    }
+
     const { email, role } = req.body;
+
+    // 🔒 Fix #2 : un utilisateur non-admin ne peut pas élever son propre rôle
+    if (role && req.user?.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Accès refusé. Seul un admin peut modifier les rôles.' });
+    }
 
     const data: any = {};
     if (email) data.email = email.toLowerCase().trim();
@@ -73,9 +94,13 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteUser = async (req: Request, res: Response) => {
+export const deleteUser = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+
+    if (!canModifyUser(req, id)) {
+      return res.status(403).json({ error: 'Accès refusé. Vous ne pouvez supprimer que votre propre compte.' });
+    }
 
     await prisma.user.delete({ where: { id } });
     res.json({ success: true });
@@ -88,13 +113,28 @@ export const deleteUser = async (req: Request, res: Response) => {
   }
 };
 
-export const changePassword = async (req: Request, res: Response) => {
+export const changePassword = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+
+    if (!canModifyUser(req, id)) {
+      return res.status(403).json({ error: 'Accès refusé. Vous ne pouvez modifier que votre propre mot de passe.' });
+    }
+
     const { oldPassword, newPassword } = req.body;
 
     if (!oldPassword || !newPassword) {
       return res.status(400).json({ error: 'Ancien et nouveau mot de passe requis.' });
+    }
+
+    // 🔒 Fix #2 : un admin n'a pas besoin de l'ancien mot de passe pour réinitialiser celui d'un utilisateur
+    if (req.user?.role === 'ADMIN') {
+      if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ error: 'Le nouveau mot de passe doit contenir au moins 6 caractères.' });
+      }
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+      await prisma.user.update({ where: { id }, data: { passwordHash } });
+      return res.json({ success: true });
     }
 
     const user = await prisma.user.findUnique({ where: { id } });
@@ -105,6 +145,10 @@ export const changePassword = async (req: Request, res: Response) => {
     const validPassword = await bcrypt.compare(oldPassword, user.passwordHash);
     if (!validPassword) {
       return res.status(401).json({ error: 'Ancien mot de passe incorrect.' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Le nouveau mot de passe doit contenir au moins 6 caractères.' });
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 10);

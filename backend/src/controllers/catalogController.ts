@@ -1,12 +1,20 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
 import { importCatalogFromCsv } from '../utils/catalogSync';
+import { AuthRequest } from '../middleware/auth';
 import fs from 'fs';
 // 🧹 Fix #9 : suppression de `import path from 'path'` — jamais utilisé
 
-export const getProducts = async (req: Request, res: Response) => {
+export const getProducts = async (req: AuthRequest, res: Response) => {
   try {
+    // 🔒 Fix #10 : exclure purchasePrice pour les commerciaux
+    const isAdmin = req.user?.role === 'ADMIN';
     const products = await prisma.product.findMany({
+      select: {
+        id: true, sageRef: true, name: true, brand: true, category: true,
+        sellPrice: true, stock: true, active: true,
+        ...(isAdmin ? { purchasePrice: true } : {}),
+      },
       orderBy: { name: 'asc' },
     });
     res.json(products);

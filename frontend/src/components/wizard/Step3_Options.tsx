@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React from 'react';
 import { PoolInput } from '../../types';
 import { Button } from '../ui/Button';

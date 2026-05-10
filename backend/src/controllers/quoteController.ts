@@ -2,9 +2,35 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../index';
 
+/**
+ * Vérifie que l'utilisateur courant est propriétaire du devis ou admin.
+ * Renvoie 403 si l'accès est refusé, null si le devis n'existe pas.
+ */
+async function authorizeQuote(req: AuthRequest, res: Response, quoteId: string): Promise<boolean> {
+  const quote = await prisma.quote.findUnique({ where: { id: quoteId }, select: { createdById: true } });
+  if (!quote) {
+    res.status(404).json({ error: 'Devis introuvable.' });
+    return false;
+  }
+  if (req.user?.role !== 'ADMIN' && quote.createdById !== req.user?.id) {
+    res.status(403).json({ error: 'Accès refusé. Vous n\'êtes pas propriétaire de ce devis.' });
+    return false;
+  }
+  return true;
+}
+
 export const getQuotes = async (req: AuthRequest, res: Response) => {
+  // 🔒 Fix #5 : un commercial ne voit que ses propres devis
+  const where = req.user?.role !== 'ADMIN' ? { createdById: req.user!.id } : {};
+
   const quotes = await prisma.quote.findMany({
-    include: { createdBy: { select: { email: true } } },
+    where,
+    select: {
+      id: true, reference: true, status: true, clientName: true,
+      createdAt: true,
+      createdBy: { select: { email: true } },
+      _count: { select: { lines: true } },
+    },
     orderBy: { createdAt: 'desc' }
   });
   res.json(quotes);
@@ -12,9 +38,17 @@ export const getQuotes = async (req: AuthRequest, res: Response) => {
 
 export const getQuoteById = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
+  if (!(await authorizeQuote(req, res, id))) return;
+
+  // 🔒 Fix #10 : exclure purchasePrice pour les commerciaux
+  const isAdmin = req.user?.role === 'ADMIN';
+  const productSelect = isAdmin ? true : {
+    select: { id: true, sageRef: true, name: true, brand: true, category: true, sellPrice: true, stock: true, active: true, unit: true, photoUrl: true },
+  };
+
   const quote = await prisma.quote.findUnique({
     where: { id },
-    include: { lines: { include: { product: true } } }
+    include: { lines: { include: { product: productSelect } } }
   });
   if (!quote) return res.status(404).json({ error: 'Not found' });
   res.json(quote);
@@ -44,7 +78,12 @@ export const createQuote = async (req: AuthRequest, res: Response) => {
 
 export const updateQuote = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
+  if (!(await authorizeQuote(req, res, id))) return;
+
   const { poolData, calcParams, calculationResult, lines, status, clientName, clientEmail, internalNotes } = req.body;
+
+  // 🔒 Fix #5 : un commercial ne peut pas changer le statut d'un devis qui ne lui appartient pas (déjà filtré ci-dessus)
+  // Les admins peuvent tout modifier, y compris le statut
 
   // Transaction for safe updates
   const quote = await prisma.$transaction(async (tx) => {
@@ -93,10 +132,9 @@ export const updateQuote = async (req: AuthRequest, res: Response) => {
 
 export const deleteQuote = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
+  if (!(await authorizeQuote(req, res, id))) return;
+
   try {
-    // Les lignes associées seront supprimées automatiquement si onDelete: Cascade est configuré dans le schéma,
-    // sinon Prisma lèvera une erreur. Mais dans Prisma, par défaut c'est géré manuellement ou en cascade.
-    // Ajoutons la suppression des lignes par sécurité.
     await prisma.quoteLine.deleteMany({ where: { quoteId: id } });
     await prisma.quote.delete({ where: { id } });
     res.json({ success: true });

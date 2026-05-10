@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React from 'react';
 import { PoolInput, PoolShape, ShapeParams } from '../../types';
 import { Input } from '../ui/Input';

@@ -7,7 +7,7 @@ const router = Router();
 router.get('/', authenticate, getUsers);
 router.post('/', authenticate, requireAdmin, createUser);
 router.put('/:id', authenticate, updateUser);
-router.delete('/:id', authenticate, requireAdmin, deleteUser);
+router.delete('/:id', authenticate, deleteUser);
 router.put('/:id/password', authenticate, changePassword);
 
 export default router;

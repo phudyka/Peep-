@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
 import { errorHandler } from './middleware/errorHandler';
+import { authenticate } from './middleware/auth';
 import authRoutes from './routes/auth';
 import usersRoutes from './routes/users';
 import quotesRoutes from './routes/quotes';
@@ -42,16 +44,44 @@ app.use(cors({
 // 🔒 Fix #7 : limite la taille du body JSON à 1 Mo (prévention DoS)
 app.use(express.json({ limit: '1mb' }));
 
+// https://express-rate-limit.mintlify.app/referred/securing-with-proxies
+app.set('trust proxy', 1);
+
+// 🔒 Fix #11 : rate limiting sur les routes sensibles
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de tentatives de connexion. Réessayez dans 15 minutes.' },
+});
+
+const calculateLimiter = rateLimit({
+  windowMs: 60 * 1000,  // 1 minute
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de requêtes de calcul. Réessayez dans une minute.' },
+});
+
+const importLimiter = rateLimit({
+  windowMs: 60 * 1000,  // 1 minute
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop d\'imports. Réessayez dans une minute.' },
+});
+
 // ─── Fichiers statiques ───────────────────────────────────────────────────────
 app.use('/uploads', express.static(uploadsDir));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', loginLimiter, authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/quotes', quotesRoutes);
-app.use('/api/catalog', catalogRoutes);
+app.use('/api/catalog', importLimiter, catalogRoutes);
 app.use('/api/settings', settingsRoutes);
-app.use('/api/calculate', calculateRoutes);
+app.use('/api/calculate', authenticate, calculateLimiter, calculateRoutes);
 
 app.use(errorHandler);
 

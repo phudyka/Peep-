@@ -66,6 +66,9 @@ model Product {
   updatedAt      DateTime        @updatedAt
 
   quoteLines QuoteLine[]
+
+  @@index([category])
+  @@index([active])
 }
 
 model Quote {
@@ -88,6 +91,9 @@ model Quote {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([reference])
 }
 
 model QuoteLine {
@@ -103,6 +109,8 @@ model QuoteLine {
   isManuallyAdded  Boolean @default(false)
   isManuallyEdited Boolean @default(false)
   notes            String?
+
+  @@index([quoteId])
 }
 
 model CalcSettings {

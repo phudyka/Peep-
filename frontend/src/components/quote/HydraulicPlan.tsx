@@ -1,7 +1,7 @@
-// @ts-nocheck
 import React, { useEffect, useState, useCallback } from 'react';
 import { Download, FileCode2, Maximize2, RefreshCw, X } from 'lucide-react';
 import { Button } from '../ui/Button';
+import DOMPurify from 'dompurify';
 import api from '../../services/api';
 
 interface Props {
@@ -147,7 +147,7 @@ export const HydraulicPlan: React.FC<Props> = ({ quoteId, reference }) => {
         <div
           className="w-full overflow-auto rounded-lg border border-peep-border shadow-sm bg-peep-surface"
           style={{ minHeight: '320px' }}
-          dangerouslySetInnerHTML={{ __html: svgContent! }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(svgContent!) }}
         />
 
         <p className="text-xs text-default-400 mt-2 text-center font-mono">
@@ -178,7 +178,7 @@ export const HydraulicPlan: React.FC<Props> = ({ quoteId, reference }) => {
             </div>
             <div
               className="p-4 overflow-auto"
-              dangerouslySetInnerHTML={{ __html: svgContent! }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(svgContent!) }}
             />
           </div>
         </div>
