@@ -115,17 +115,17 @@ export const Step2_Dimensions: React.FC<Props> = ({ input, updateInput, onNext, 
             selectedKeys={[input.type]}
             onSelectionChange={(keys) => updateInput('type', Array.from(keys)[0])}
           >
-            <SelectItem key="SKIMMER" value="SKIMMER">Skimmer</SelectItem>
-            <SelectItem key="OVERFLOW" value="OVERFLOW">Débordement</SelectItem>
-            <SelectItem key="ROMAN" value="ROMAN">Romaine</SelectItem>
+            <SelectItem key="SKIMMER">Skimmer</SelectItem>
+            <SelectItem key="OVERFLOW">Débordement</SelectItem>
+            <SelectItem key="ROMAN">Romaine</SelectItem>
           </Select>
           <Select 
             label="Usage" 
             selectedKeys={[input.usage]}
             onSelectionChange={(keys) => updateInput('usage', Array.from(keys)[0])}
           >
-            <SelectItem key="RESIDENTIAL" value="RESIDENTIAL">Résidentiel</SelectItem>
-            <SelectItem key="PUBLIC" value="PUBLIC">Public</SelectItem>
+            <SelectItem key="RESIDENTIAL">Résidentiel</SelectItem>
+            <SelectItem key="PUBLIC">Public</SelectItem>
           </Select>
         </div>
 

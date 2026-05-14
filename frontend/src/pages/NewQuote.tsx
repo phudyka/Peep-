@@ -60,7 +60,7 @@ const NewQuote = () => {
         
         {/* Stepper */}
         <div className="flex items-center gap-0">
-          {steps.map((label, i) => {
+          {steps.map((_label, i) => {
             const stepNum = i + 1;
             const isComplete = step > stepNum;
             const isCurrent = step === stepNum;

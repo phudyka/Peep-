@@ -92,6 +92,17 @@ export interface InstallationResult {
   filterDiameter: number;
   sand: number;
   overrides: Record<string, boolean>;
+  // ─ Étape 11 (Phase 5) : pertes de charge & HMT réelle ────────────────────────
+  /** Pertes de charge linéaires sur le circuit (m de colonne d'eau). */
+  linearPressureLoss?: number;
+  /** Pertes de charge totales = linéaires + singulières (≈ 20% du linéaire). */
+  totalPressureLoss?: number;
+  /** HMT réelle = HMT de base + pertes de charge totales (m). */
+  hmtReal?: number;
+  /** Longueur de circuit estimée utilisée pour le calcul (m). */
+  estimatedCircuitLength?: number;
+  /** Warnings post-calcul (sous-dimensionnement, vérifications recommandées…). */
+  warnings?: string[];
 }
 
 // ─── Calcul de surface selon la forme ─────────────────────────────────────────
@@ -208,6 +219,66 @@ export function runHydraulicEngine(
   const sandCalc = Math.ceil(filterArea * params.sandPerM2);
   const sand = applyOverride('sand', sandCalc);
 
+  // ─── Step 11 — Pertes de charge & HMT réelle (Phase 5) ──────────────────────
+  //
+  // Formule Hazen-Williams (équivalente à un "Darcy-Weisbach simplifié" pour PVC) :
+  //   J [m/m] = (10.67 / C^1.852) × Q^1.852 / D^4.87
+  // avec Q en m³/s, D en m, C = 150 (coefficient PVC pression).
+  //
+  // Longueur de circuit estimée : sqrt(surface) × 4 (périmètre approximatif
+  // local technique → bassin, conforme à la pratique métier).
+  // Pertes singulières : majoration forfaitaire +20% du linéaire (coudes, vannes).
+  // Diamètre de référence : on prend l'aspiration (côté basse pression, le plus
+  // sensible à la cavitation et au sous-dimensionnement).
+  const pvcCoefficient = 150;
+  const surfaceM2 = computeSurface(input.shapeParams);
+  const circuitLengthCalc = Math.sqrt(Math.max(1, surfaceM2)) * 4;
+  const circuitLength = applyOverride('estimatedCircuitLength', circuitLengthCalc);
+
+  const Q_si = adjustedFlowRate / 3600;          // m³/s
+  const D_si = suctionDiameter / 1000;           // m
+  const J = D_si > 0
+    ? (10.67 / Math.pow(pvcCoefficient, 1.852)) * Math.pow(Q_si, 1.852) / Math.pow(D_si, 4.87)
+    : 0;
+  const linearPressureLossCalc   = J * circuitLength;
+  const totalPressureLossCalc    = linearPressureLossCalc * 1.2;
+  const linearPressureLoss = applyOverride('linearPressureLoss', linearPressureLossCalc);
+  const totalPressureLoss  = applyOverride('totalPressureLoss',  totalPressureLossCalc);
+  const hmtRealCalc = params.hmt + totalPressureLoss;
+  const hmtReal     = applyOverride('hmtReal', hmtRealCalc);
+
+  // ─── Validations post-calcul → warnings ─────────────────────────────────────
+  const warnings: string[] = [];
+
+  // HMT réelle nettement supérieure à la HMT de référence → pompe sous-évaluée
+  if (hmtReal > params.hmt * 1.15) {
+    warnings.push(
+      `HMT réelle (${hmtReal.toFixed(1)} m) > 115% de la HMT de référence — réviser la puissance de pompe à la hausse`
+    );
+  }
+
+  // Débit < 50% du débit théorique idéal (volume / 6h) → pompe sous-dimensionnée
+  const idealFlowRate = volume / 6;
+  if (adjustedFlowRate < 0.5 * idealFlowRate) {
+    warnings.push(
+      `Débit (${adjustedFlowRate.toFixed(1)} m³/h) très inférieur à l'idéal (${idealFlowRate.toFixed(1)} m³/h) — pompe potentiellement sous-dimensionnée`
+    );
+  }
+
+  // Filtre haute capacité requis
+  if (filterArea > 0.8) {
+    warnings.push(
+      `Surface filtre > 0,8 m² — filtre haute capacité requis, vérifier la disponibilité fournisseur`
+    );
+  }
+
+  // Puissance importante en usage résidentiel
+  if (input.usage === 'RESIDENTIAL' && pumpPower > 1.5) {
+    warnings.push(
+      `Puissance de pompe ${pumpPower} kW élevée pour un usage résidentiel — confirmer avec le client (raccordement électrique, bruit)`
+    );
+  }
+
   return {
     volume,
     depthAvg,
@@ -224,5 +295,10 @@ export function runHydraulicEngine(
     filterDiameter,
     sand,
     overrides: overridesMap,
+    linearPressureLoss,
+    totalPressureLoss,
+    hmtReal,
+    estimatedCircuitLength: circuitLength,
+    warnings,
   };
 }

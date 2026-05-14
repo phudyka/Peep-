@@ -2,12 +2,14 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../index';
 import { runHydraulicEngine, PoolInput, CalcParams, ShapeParams } from '../services/hydraulicEngine';
+import { suggestProductsForResult } from '../services/intelligence';
 
 export const calculateHydraulics = async (req: AuthRequest, res: Response) => {
   try {
-    const { poolData, userOverrides } = req.body as {
+    const { poolData, userOverrides, includeProducts } = req.body as {
       poolData: Partial<PoolInput> & Record<string, unknown>;
       userOverrides?: Record<string, number>;
+      includeProducts?: boolean;
     };
 
     // ── Rétro-compatibilité : les anciens devis n'ont pas shape/shapeParams ──
@@ -62,6 +64,24 @@ export const calculateHydraulics = async (req: AuthRequest, res: Response) => {
     };
 
     const result = runHydraulicEngine(normalizedInput, params, userOverrides ?? {});
+
+    // Opt-in : si le client demande explicitement l'enrichissement produit,
+    // on lance l'orchestrateur d'intelligence. Sinon on conserve la réponse
+    // legacy (zéro régression sur l'auto-save debounce du front actuel).
+    if (includeProducts) {
+      try {
+        const suggestion = await suggestProductsForResult(result, {
+          usage:    normalizedInput.usage,
+          poolType: normalizedInput.type,
+        });
+        return res.json({ ...result, suggestion });
+      } catch (err) {
+        console.warn('[calculateController] suggestion produit indisponible :', err);
+        // Fallback gracieux : on rend quand même les résultats hydrauliques.
+        return res.json(result);
+      }
+    }
+
     res.json(result);
   } catch (error) {
     console.error('[calculateController]', error);

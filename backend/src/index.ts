@@ -10,6 +10,7 @@ import quotesRoutes from './routes/quotes';
 import catalogRoutes from './routes/catalog';
 import settingsRoutes from './routes/settings';
 import calculateRoutes from './routes/calculate';
+import intelligenceRoutes from './routes/intelligence';
 import path from 'path';
 import fs from 'fs';
 
@@ -82,6 +83,7 @@ app.use('/api/quotes', quotesRoutes);
 app.use('/api/catalog', importLimiter, catalogRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/calculate', authenticate, calculateLimiter, calculateRoutes);
+app.use('/api/intelligence', intelligenceRoutes);
 
 app.use(errorHandler);
 

@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../index';
+import { createOrUpdateQuoteLines } from '../services/quoteBuilder';
+import type { InstallationResult, PoolInput } from '../services/hydraulicEngine';
 
 /**
  * Vérifie que l'utilisateur courant est propriétaire du devis ou admin.
@@ -55,7 +57,7 @@ export const getQuoteById = async (req: AuthRequest, res: Response) => {
 };
 
 export const createQuote = async (req: AuthRequest, res: Response) => {
-  const { poolData, calcParams, calculationResult, clientName, clientEmail } = req.body;
+  const { poolData, calcParams, calculationResult, clientName, clientEmail, autoGenerateLines } = req.body;
   const createdById = req.user!.id;
 
   const quoteCount = await prisma.quote.count();
@@ -73,7 +75,29 @@ export const createQuote = async (req: AuthRequest, res: Response) => {
     }
   });
 
-  res.json(quote);
+  // Auto-génération des lignes via l'orchestrateur d'intelligence.
+  // Opt-out : passer `autoGenerateLines: false` pour conserver le comportement
+  // historique (devis vide). Par défaut on génère pour livrer de la valeur
+  // immédiate, tout en restant rattrapable (les lignes sont éditables).
+  if (autoGenerateLines !== false && calculationResult) {
+    try {
+      const result = calculationResult as InstallationResult;
+      const input  = poolData as Partial<PoolInput>;
+      await createOrUpdateQuoteLines(quote.id, result, {
+        usage:    input.usage    ?? 'RESIDENTIAL',
+        poolType: input.type     ?? 'SKIMMER',
+      });
+    } catch (err) {
+      console.warn('[createQuote] auto-génération de lignes échouée (devis créé sans lignes) :', err);
+    }
+  }
+
+  // On retourne le devis avec ses lignes fraîchement créées
+  const fullQuote = await prisma.quote.findUnique({
+    where: { id: quote.id },
+    include: { lines: { include: { product: true } } },
+  });
+  res.json(fullQuote ?? quote);
 };
 
 export const updateQuote = async (req: AuthRequest, res: Response) => {

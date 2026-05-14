@@ -141,3 +141,24 @@ model Settings {
   lang        String   @default("fr")
   updatedAt   DateTime @updatedAt
 }
+
+// ─── Phase 3 : base de connaissance métier ETS Maria ──────────────────────────
+// Stocke les cas terrain (problèmes rencontrés, solutions appliquées) pour
+// alimenter les "alertes terrain" affichées avec un devis. Indexé par tags
+// techniques pour permettre une requête rapide à partir du contexte calculé.
+model ExpertiseCase {
+  id               String   @id @default(uuid())
+  titre            String
+  probleme         String
+  contexte         Json     // dimensions piscine, type, options
+  solution         String
+  produitsSolution Json     // [{référence, quantité, rôle}]
+  tagsTechniques   String[] // ["pompe_sous_dimensionnée", "colmatage_filtre"]
+  frequence        Int      @default(1)  // nb de fois rencontré
+  gravite          Int      @default(1)  // 1=mineur, 2=moyen, 3=critique
+  source           String   // "manuel_terrain", "import_csv", "retour_sav"
+  createdAt        DateTime @default(now())
+
+  @@index([tagsTechniques])
+  @@index([gravite])
+}
